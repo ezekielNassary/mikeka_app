@@ -16,5 +16,5 @@ const run = (cmd) => {
 run('pnpm build');
 run('git add -A');
 run(`git commit -m ${JSON.stringify(msg)}`);
-run('git push origin main');
+run('git push origin HEAD:mikeka');
 console.log('\nDeployed ✓');
