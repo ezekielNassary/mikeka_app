@@ -1,0 +1,14 @@
+{
+  "name": "mikeka",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Mikeka — free, ad-supported football odds & stats. Frontend + backend on one port.",
+  "scripts": {
+    "install:all": "pnpm --prefix backend install && pnpm --prefix frontend install",
+    "build": "pnpm --prefix frontend build && node scripts/copy-dist.mjs",
+    "start": "node backend/src/index.js",
+    "dev:backend": "pnpm --prefix backend dev",
+    "dev:frontend": "pnpm --prefix frontend dev",
+    "deploy": "node scripts/deploy.mjs"
+  }
+}
