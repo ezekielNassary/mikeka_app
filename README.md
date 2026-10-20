@@ -63,3 +63,4 @@ cd frontend && pnpm install && pnpm dev
 
 New endpoints go in `backend/src/routes/`, register them in
 `backend/src/routes/index.js`.
+# mikeka_app
