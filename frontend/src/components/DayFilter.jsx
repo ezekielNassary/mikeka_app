@@ -5,6 +5,7 @@ const PRESETS = [
   { key: 'yesterday', label: 'Yesterday' },
   { key: 'today', label: 'Today' },
   { key: 'tomorrow', label: 'Tomorrow' },
+  { key: 'week', label: 'Next 7 days' },
 ];
 
 export default function DayFilter({ value, onChange }) {
@@ -13,6 +14,10 @@ export default function DayFilter({ value, onChange }) {
     yesterday: dateKeyOffset(-1),
     today,
     tomorrow: dateKeyOffset(1),
+  };
+  const presetTitle = {
+    all: `${formatDay(dateKeyOffset(-1))} – ${formatDay(dateKeyOffset(1))}`,
+    week: `${formatDay(today)} – ${formatDay(dateKeyOffset(7))}`,
   };
 
   const isPreset = PRESETS.some((p) => p.key === value);
@@ -28,7 +33,7 @@ export default function DayFilter({ value, onChange }) {
             <button
               key={p.key}
               onClick={() => onChange(p.key)}
-              title={date ? formatDay(date) : undefined}
+              title={date ? formatDay(date) : presetTitle[p.key]}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
                 active ? 'bg-emerald-500 text-ink-950' : 'text-slate-400 hover:text-slate-100'
               }`}

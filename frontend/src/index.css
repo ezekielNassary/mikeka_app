@@ -27,6 +27,12 @@ body {
 }
 .animate-fade-in { animation: fade-in 0.25s ease both; }
 
+@keyframes progress-indeterminate {
+  0% { margin-left: -35%; }
+  100% { margin-left: 100%; }
+}
+.animate-progress-indeterminate { animation: progress-indeterminate 1.2s ease-in-out infinite; }
+
 @keyframes shimmer {
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }

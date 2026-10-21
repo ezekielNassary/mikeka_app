@@ -14,18 +14,29 @@ import Sidebar from './components/Sidebar.jsx';
 import StatsView from './views/StatsView.jsx';
 import MatchesView from './views/MatchesView.jsx';
 
-const resolveDateKey = (value) => {
-  if (value === 'today') return todayKey();
-  if (value === 'yesterday') return dateKeyOffset(-1);
-  if (value === 'tomorrow') return dateKeyOffset(1);
-  return value; // 'all' or a yyyy-mm-dd
+// 'all' maps to yesterday..tomorrow (the window this feed covers). 'week' maps
+// to today..+7. A yyyy-mm-dd maps to that single day; the day presets map to
+// their specific day.
+const resolveDateRange = (value) => {
+  if (value === 'all') return { from: dateKeyOffset(-1), to: dateKeyOffset(1) };
+  if (value === 'week') return { from: dateKeyOffset(0), to: dateKeyOffset(7) };
+  if (value === 'today') return { key: todayKey() };
+  if (value === 'yesterday') return { key: dateKeyOffset(-1) };
+  if (value === 'tomorrow') return { key: dateKeyOffset(1) };
+  return { key: value }; // a yyyy-mm-dd
+};
+
+const matchesDayRange = (ts, range) => {
+  if (!range) return true;
+  const k = localDateKey(ts);
+  if (range.key) return k === range.key;
+  return k >= range.from && k <= range.to;
 };
 
 export default function App() {
-  const { tournaments, phase, loading, loadedPages, totalPages, loadedEvents, totalEvents, percent, error, retry } =
-    useOddsLoader();
+  const { tournaments, phase, loading, loadedEvents, totalEvents, error, retry } = useOddsLoader();
 
-  const [day, setDay] = useState('today');
+  const [day, setDay] = useState('all');
   const [league, setLeague] = useState('all');
   const [query, setQuery] = useState('');
   const [expanded, setExpanded] = useState(null);
@@ -48,23 +59,22 @@ export default function App() {
     return () => clearInterval(id);
   }, []);
 
-  const dayKey = resolveDateKey(day);
+  const range = resolveDateRange(day);
   const q = query.trim().toLowerCase();
 
   const base = useMemo(() => {
-    const matchDate = (ts) => day === 'all' || !dayKey || localDateKey(ts) === dayKey;
     return tournaments
       .map((t) => ({
         ...t,
         events: (t.events || []).filter((e) => {
-          if (!matchDate(e.startTimeUTC)) return false;
+          if (!matchesDayRange(e.startTimeUTC, range)) return false;
           if (q && !(`${e.homeTeam} ${e.awayTeam}`.toLowerCase().includes(q))) return false;
           return true;
         }),
       }))
       .filter((t) => t.events.length > 0)
       .sort((a, b) => (a.name > b.name ? 1 : -1));
-  }, [tournaments, day, dayKey, q, now]);
+  }, [tournaments, range, q, now]);
 
   const filtered = useMemo(
     () => (league === 'all' ? base : base.filter((t) => String(t.id) === league)),
@@ -102,13 +112,12 @@ export default function App() {
 
   const runAutoPick = () => {
     const target = Math.max(1, Math.min(AUTO_MAX_PICKS, parseInt(autoTarget) || 20));
-    const matchDate = (ts) => day === 'all' || !dayKey || localDateKey(ts) === dayKey;
     const { picks: generated, eased } = collectAutoPicks(tournaments, {
       markets: autoMarkets,
       minOdds: autoMinOdds,
       target,
       filterEvent: (e, t) =>
-        matchDate(e.startTimeUTC) &&
+        matchesDayRange(e.startTimeUTC, range) &&
         (league === 'all' || String(t.id) === league),
     });
     setPicks(generated);
@@ -177,17 +186,17 @@ export default function App() {
           <div className="flex items-center gap-3 ml-auto">
             <div className="text-xs text-slate-500 hidden sm:block">
               <span className="font-bold text-slate-300 tabular-nums">{matchCount.toLocaleString()}</span> matches
-              {day !== 'all' && dayKey && <span> · {formatDay(dayKey)}</span>}
+              {range?.key ? <span> · {formatDay(range.key)}</span> : day === 'week' ? <span> · next 7 days</span> : <span> · last 3 days</span>}
             </div>
             <AiButton onClick={() => setAutoOpen(true)} disabled={!tournaments.length} />
           </div>
         </div>
 
-        {phase === 'streaming' && (
+        {loading && (
           <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-3">
             <ProgressBar
-              percent={percent}
-              label={`Streaming odds — page ${loadedPages} of ${totalPages}`}
+              percent={null}
+              label="Loading matches"
               sublabel={`${loadedEvents.toLocaleString()}${totalEvents ? ` / ${totalEvents.toLocaleString()}` : ''} matches loaded`}
             />
           </div>
@@ -205,9 +214,9 @@ export default function App() {
           </div>
         ) : filtered.length === 0 ? (
           <div className="py-24 text-center">
-            <p className="text-slate-400 font-semibold mb-1">No matches{day !== 'all' && dayKey ? ` on ${formatDay(dayKey)}` : ''}</p>
+            <p className="text-slate-400 font-semibold mb-1">No matches{range?.key ? ` on ${formatDay(range.key)}` : day === 'week' ? ' in the next 7 days' : ' in the last 3 days'}</p>
             <p className="text-sm text-slate-500">
-              {phase === 'streaming' ? 'Still loading — more matches may appear.' : 'Try another day or clear your search.'}
+              {loading ? 'Still loading — more matches may appear.' : 'Try another day or clear your search.'}
             </p>
           </div>
         ) : (
@@ -239,12 +248,7 @@ export default function App() {
           </div>
         )}
 
-        {loading && phase === 'streaming' && filtered.length > 0 && (
-          <div className="flex items-center justify-center gap-2 py-6 text-xs text-slate-500">
-            <span className="animate-spin rounded-full h-3 w-3 border-2 border-emerald-500 border-t-transparent" />
-            Loading more matches…
-          </div>
-        )}
+
       </main>
         </>
       )}

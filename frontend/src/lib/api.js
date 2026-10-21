@@ -5,6 +5,13 @@ export async function fetchOddsPage(pageNum, signal) {
   return data;
 }
 
+export async function fetchAllOdds(signal) {
+  const res = await fetch('/api/odds/all', { signal });
+  const data = await res.json();
+  if (!res.ok || data.error) throw new Error(data.error || `Request failed (${res.status})`);
+  return data;
+}
+
 export function mergeTournaments(prev, incoming) {
   const map = new Map(prev.map((t) => [t.id, { ...t, events: [...t.events] }]));
   for (const t of incoming || []) {

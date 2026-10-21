@@ -81,6 +81,38 @@ async function fetchSportyOdds() {
   return merged;
 }
 
+// Fetch all football odds across every page in one shot.
+// SportyBet only keeps odds on not-yet-started matches, so the full board spans
+// roughly two weeks; the home feed slices it by day and keeps matches listed
+// (with a Live/Ended badge) once kickoff has passed.  Cached 5 min.
+const ALL_PAGES = 40; // safety cap
+async function cacheAllOdds() {
+  if (oddsCache.data && Date.now() - oddsCache.ts < ODDS_TTL) return oddsCache.data;
+
+  // Pull up to ALL_PAGES pages concurrently, stop once a page comes back empty.
+  const reqs = [];
+  for (let p = 1; p <= ALL_PAGES; p++) reqs.push(fetchSportyPage(p).catch(() => null));
+  const pages = await Promise.all(reqs);
+
+  const map = new Map();
+  let totalNum = 0;
+  for (const page of pages) {
+    if (!page) continue;
+    totalNum = page.totalNum || totalNum;
+    for (const t of page.tournaments || []) {
+      if (map.has(t.id)) map.get(t.id).events.push(...(t.events || []));
+      else map.set(t.id, { ...t, events: [...(t.events || [])] });
+    }
+    const pageSize = (page.tournaments || []).reduce((s, t) => s + (t.events || []).length, 0);
+    if (pageSize === 0) break; // no more events
+  }
+
+  const tournaments = [...map.values()];
+  const events = tournaments.reduce((s, t) => s + (t.events || []).length, 0);
+  oddsCache = { ts: Date.now(), data: { tournaments, totalNum: totalNum || events } };
+  return oddsCache.data;
+}
+
 // Fetch a specific page and return it in the same merged-by-tournament format.
 // Used by the frontend for progressive loading.
 async function fetchSportyOddsPage(pageNum = 1) {
@@ -361,4 +393,4 @@ async function createSportyBetSlip(selections) {
   };
 }
 
-export { fetchSportyOdds, fetchSportyOddsPage, fetchBooking, fetchBookingPreview, buildOddsPayload, buildPreviewPayload, findOddsForMatch, pickOptions, createSportyBetSlip };
+export { fetchSportyOdds, fetchSportyOddsPage, cacheAllOdds, fetchBooking, fetchBookingPreview, buildOddsPayload, buildPreviewPayload, findOddsForMatch, pickOptions, createSportyBetSlip };

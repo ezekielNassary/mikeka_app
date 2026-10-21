@@ -1,6 +1,6 @@
 import { trackUsage } from '../middleware/auth.js';
 import { getPool } from '../db/index.js';
-import { fetchSportyOdds, fetchSportyOddsPage, fetchBooking, buildOddsPayload, findOddsForMatch, pickOptions, createSportyBetSlip } from '../services/sportybet.js';
+import { fetchSportyOdds, fetchSportyOddsPage, cacheAllOdds, fetchBooking, buildOddsPayload, findOddsForMatch, pickOptions, createSportyBetSlip } from '../services/sportybet.js';
 import { resolveTeam, findMatchId, getMatchDetails, buildLast5, summarize } from '../services/fotmob.js';
 
 export async function getOdds(req, res) {
@@ -57,6 +57,39 @@ export async function getOddsPage(req, res) {
     });
   } catch (e) {
     console.error('[odds:page]', e.message);
+    res.status(502).json({ error: e.message, source: 'SportyBet' });
+  }
+}
+
+// All football odds in one shot (every page). Used by the home feed so that
+// yesterday/today/tomorrow are all present and matches stay listed (with a
+// Live/Ended badge) after kickoff instead of disappearing.
+export async function getOddsAll(req, res) {
+  try {
+    const data = await cacheAllOdds();
+    const payload = buildOddsPayload(data);
+    for (const t of payload.tournaments) {
+      for (const e of t.events) {
+        e.picks60 = pickOptions(e, 0.6);
+        let top = null;
+        for (const m of e.markets || []) {
+          for (const o of m.outcomes || []) {
+            if (!top || o.probability > top.probability) {
+              top = { market: m.name + (m.specifier ? ' ' + m.specifier : ''), outcome: o.desc, odds: o.odds, probability: o.probability };
+            }
+          }
+        }
+        e.topPick = top;
+      }
+    }
+    res.json({
+      success: true, source: 'SportyBet',
+      totalNum: payload.totalEvents,
+      loadedEvents: payload.totalEvents,
+      tournaments: payload.tournaments,
+    });
+  } catch (e) {
+    console.error('[odds:all]', e.message);
     res.status(502).json({ error: e.message, source: 'SportyBet' });
   }
 }
