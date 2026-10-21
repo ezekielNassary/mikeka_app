@@ -26,33 +26,59 @@ const ICONS = {
       <path d="M8 14h.5M12 14h.5M16 14h.5M8 17.5h.5M12 17.5h.5" />
     </>
   ),
-  matches: (
+  upcoming: (
     <>
       <circle cx="12" cy="12" r="9" />
-      <path d="M12 7.4l3.4 2.5-1.3 4h-4.2l-1.3-4z" />
-      <path d="M12 3v4.4M4 9.6l4.7 3.4M20 9.6l-4.7 3.4M7.4 20l3.1-4.1M16.6 20l-3.1-4.1" />
+      <path d="M12 7v5l3 2" />
+    </>
+  ),
+  results: (
+    <>
+      <path d="M8 21h8m-4-4v4M6 4h12v6a6 6 0 01-12 0V4z" />
+      <path d="M6 6H4a2 2 0 000 4h2M18 6h2a2 2 0 010 4h-2" />
+    </>
+  ),
+  leagues: (
+    <>
+      <path d="M4 5h16v4a4 4 0 01-4 4 4 4 0 01-4-4 4 4 0 01-4 4 4 4 0 01-4-4V5z" />
+      <path d="M8 13H6M18 13h-2M12 17h.01" />
+    </>
+  ),
+  teams: (
+    <>
+      <circle cx="9" cy="8" r="3" />
+      <path d="M3 20a6 6 0 0112 0M16 11a3 3 0 100-6M21 20a5 5 0 00-4-4.9" />
     </>
   ),
 };
 
 const NAV_ITEMS = [
   { key: 'home', label: 'Home', icon: 'home' },
-  { key: 'matches', label: 'Matches', icon: 'matches' },
-  { key: 'stats', label: 'Statistics', icon: 'stats' },
+  { key: 'upcoming', label: 'Upcoming Matches', icon: 'upcoming' },
+  { key: 'results', label: 'Results', icon: 'results' },
+  {
+    key: 'stats',
+    label: 'Statistics',
+    icon: 'stats',
+    children: [
+      { key: 'stats-leagues', label: 'Leagues & Standings', icon: 'leagues' },
+      { key: 'stats-teams', label: 'Teams & Forms', icon: 'teams' },
+    ],
+  },
 ];
 
-function SidebarItem({ item, active, onSelect }) {
+function SidebarItem({ item, active, onSelect, nested = false }) {
   return (
     <button
       onClick={() => onSelect(item.key)}
       className={`w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors cursor-pointer ${
-        active ? 'bg-emerald-500/15 text-emerald-400' : 'text-slate-300 hover:bg-ink-800 hover:text-slate-100'
-      }`}
+        nested ? 'pl-9 text-[13px]' : ''
+      } ${active ? 'bg-emerald-500/15 text-emerald-400' : 'text-slate-300 hover:bg-ink-800 hover:text-slate-100'}`}
     >
-      <svg className="w-4.5 h-4.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg className={`${nested ? 'w-4 h-4' : 'w-4.5 h-4.5'} shrink-0`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         {ICONS[item.icon]}
       </svg>
-      <span>{item.label}</span>
+      <span className="truncate">{item.label}</span>
     </button>
   );
 }
@@ -83,9 +109,21 @@ export default function Sidebar({ active, onSelect, open, onClose }) {
 
         <nav className="flex-1 overflow-y-auto p-3 space-y-1">
           <p className="px-3 pt-1 pb-2 text-[10px] font-bold uppercase tracking-wide text-slate-500">Menu</p>
-          {NAV_ITEMS.map((item) => (
-            <SidebarItem key={item.key} item={item} active={active === item.key} onSelect={onSelect} />
-          ))}
+          {NAV_ITEMS.map((item) => {
+            const groupActive = item.children?.some((c) => c.key === active);
+            return (
+              <div key={item.key} className="space-y-1">
+                <SidebarItem item={item} active={active === item.key || groupActive} onSelect={onSelect} />
+                {item.children && (
+                  <div className="space-y-1">
+                    {item.children.map((c) => (
+                      <SidebarItem key={c.key} item={c} active={active === c.key} onSelect={onSelect} nested />
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </nav>
 
         <div className="p-3 border-t border-ink-700 shrink-0">

@@ -3,7 +3,6 @@ import { useOddsLoader } from './hooks/useOddsLoader.js';
 import { labelLeague, localDateKey, dateKeyOffset, todayKey, formatDay } from './lib/constants.js';
 import { collectAutoPicks, AUTO_MAX_PICKS } from './lib/autoPick.js';
 import LoadingScreen from './components/LoadingScreen.jsx';
-import ProgressBar from './components/ProgressBar.jsx';
 import DayFilter from './components/DayFilter.jsx';
 import LeagueFilter from './components/LeagueFilter.jsx';
 import MatchRow from './components/MatchRow.jsx';
@@ -14,14 +13,13 @@ import Sidebar from './components/Sidebar.jsx';
 import StatsView from './views/StatsView.jsx';
 import MatchesView from './views/MatchesView.jsx';
 
-// 'all' maps to yesterday..tomorrow (the window this feed covers). 'week' maps
-// to today..+7. A yyyy-mm-dd maps to that single day; the day presets map to
-// their specific day.
+// SportyBet only lists matches that haven't kicked off yet, so there is never
+// anything for past days. 'all' maps to today..tomorrow, 'week' to today..+7.
+// A yyyy-mm-dd maps to that single day; the day presets map to their own day.
 const resolveDateRange = (value) => {
-  if (value === 'all') return { from: dateKeyOffset(-1), to: dateKeyOffset(1) };
+  if (value === 'all') return { from: todayKey(), to: dateKeyOffset(1) };
   if (value === 'week') return { from: dateKeyOffset(0), to: dateKeyOffset(7) };
   if (value === 'today') return { key: todayKey() };
-  if (value === 'yesterday') return { key: dateKeyOffset(-1) };
   if (value === 'tomorrow') return { key: dateKeyOffset(1) };
   return { key: value }; // a yyyy-mm-dd
 };
@@ -34,7 +32,7 @@ const matchesDayRange = (ts, range) => {
 };
 
 export default function App() {
-  const { tournaments, phase, loading, loadedEvents, totalEvents, error, retry } = useOddsLoader();
+  const { tournaments, phase, loading, error, retry } = useOddsLoader();
 
   const [day, setDay] = useState('all');
   const [league, setLeague] = useState('all');
@@ -96,7 +94,9 @@ export default function App() {
 
   const selectView = (key) => {
     setNavKey(key);
-    setView(key);
+    // Sidebar 'stats-leagues' / 'stats-teams' both open the Statistics page,
+    // which reads the active tab from navKey.
+    setView(key.startsWith('stats') ? 'stats' : key);
     setNavOpen(false);
   };
 
@@ -129,7 +129,7 @@ export default function App() {
   };
 
   if (phase === 'connecting') {
-    return <LoadingScreen phase={phase} percent={0} loadedPages={0} totalPages={0} loadedEvents={0} totalEvents={0} />;
+    return <LoadingScreen />;
   }
 
   return (
@@ -137,10 +137,17 @@ export default function App() {
       <Sidebar active={navKey} onSelect={selectView} open={navOpen} onClose={() => setNavOpen(false)} />
 
       <div className="pb-28">
-      {view === 'stats' && <StatsView onBack={() => selectView('home')} />}
-      {view === 'matches' && <MatchesView onBack={() => selectView('home')} />}
+      {view === 'stats' && (
+        <StatsView
+          onBack={() => selectView('home')}
+          tab={navKey === 'stats-teams' ? 'teams' : 'leagues'}
+          onTabChange={(t) => setNavKey(t === 'teams' ? 'stats-teams' : 'stats-leagues')}
+        />
+      )}
+      {view === 'upcoming' && <MatchesView mode="upcoming" onBack={() => selectView('home')} />}
+      {view === 'results' && <MatchesView mode="results" onBack={() => selectView('home')} />}
 
-      {view !== 'home' && view !== 'stats' && view !== 'matches' && (
+      {view !== 'home' && view !== 'stats' && view !== 'upcoming' && view !== 'results' && (
         <main className="max-w-6xl mx-auto px-3 sm:px-4 py-24 text-center">
           <p className="text-slate-400 font-semibold">Coming soon</p>
           <p className="text-sm text-slate-500 mt-1">Pick a section from the menu.</p>
@@ -186,21 +193,12 @@ export default function App() {
           <div className="flex items-center gap-3 ml-auto">
             <div className="text-xs text-slate-500 hidden sm:block">
               <span className="font-bold text-slate-300 tabular-nums">{matchCount.toLocaleString()}</span> matches
-              {range?.key ? <span> · {formatDay(range.key)}</span> : day === 'week' ? <span> · next 7 days</span> : <span> · last 3 days</span>}
+              {range?.key ? <span> · {formatDay(range.key)}</span> : day === 'week' ? <span> · next 7 days</span> : <span> · today & tomorrow</span>}
             </div>
             <AiButton onClick={() => setAutoOpen(true)} disabled={!tournaments.length} />
           </div>
         </div>
 
-        {loading && (
-          <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-3">
-            <ProgressBar
-              percent={null}
-              label="Loading matches"
-              sublabel={`${loadedEvents.toLocaleString()}${totalEvents ? ` / ${totalEvents.toLocaleString()}` : ''} matches loaded`}
-            />
-          </div>
-        )}
       </header>
 
       <main className="max-w-6xl mx-auto px-3 sm:px-4 py-5 sm:py-6">
@@ -214,7 +212,7 @@ export default function App() {
           </div>
         ) : filtered.length === 0 ? (
           <div className="py-24 text-center">
-            <p className="text-slate-400 font-semibold mb-1">No matches{range?.key ? ` on ${formatDay(range.key)}` : day === 'week' ? ' in the next 7 days' : ' in the last 3 days'}</p>
+            <p className="text-slate-400 font-semibold mb-1">No matches{range?.key ? ` on ${formatDay(range.key)}` : day === 'week' ? ' in the next 7 days' : ' today or tomorrow'}</p>
             <p className="text-sm text-slate-500">
               {loading ? 'Still loading — more matches may appear.' : 'Try another day or clear your search.'}
             </p>

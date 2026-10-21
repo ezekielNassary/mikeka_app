@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAsync } from '../hooks/useAsync.js';
 import { fetchLeagues } from '../lib/statsApi.js';
 import LeagueList from '../components/stats/LeagueList.jsx';
@@ -7,8 +7,7 @@ import TeamSearch from '../components/stats/TeamSearch.jsx';
 import TeamDetail from '../components/stats/TeamDetail.jsx';
 import { StatsLoader } from '../components/stats/Loaders.jsx';
 
-function Root({ onLeague, onTeam }) {
-  const [tab, setTab] = useState('leagues');
+function Root({ onLeague, onTeam, tab, setTab }) {
   const leagues = useAsync((signal) => fetchLeagues(signal), []);
 
   return (
@@ -49,13 +48,28 @@ function Root({ onLeague, onTeam }) {
   );
 }
 
-export default function StatsView({ onBack }) {
+export default function StatsView({ onBack, tab = 'leagues', onTabChange }) {
+  const [localTab, setLocalTab] = useState(tab);
   const [stack, setStack] = useState([{ type: 'root' }]);
   const cur = stack[stack.length - 1];
   const push = (r) => setStack((s) => [...s, r]);
   const back = () => setStack((s) => (s.length > 1 ? s.slice(0, -1) : s));
   const openTeam = (id) => { if (id) push({ type: 'team', id: String(id) }); };
   const atRoot = cur.type === 'root';
+
+  // When the sidebar changes the section, switch tab and reset the drill stack.
+  useEffect(() => {
+    setLocalTab(tab);
+    setStack([{ type: 'root' }]);
+  }, [tab]);
+
+  const changeTab = (next) => {
+    setLocalTab(next);
+    setStack([{ type: 'root' }]);
+    onTabChange?.(next);
+  };
+
+  const activeTab = localTab;
 
   return (
     <div className="max-w-5xl mx-auto px-3 sm:px-4 py-6 pb-28 animate-fade-in">
@@ -76,7 +90,7 @@ export default function StatsView({ onBack }) {
         <p className="text-sm text-slate-500 mt-1 ml-[46px]">Standings, results and team form — powered by FotMob.</p>
       </header>
 
-      {cur.type === 'root' && <Root onLeague={(id, name) => push({ type: 'league', id, name })} onTeam={(id) => openTeam(id)} />}
+      {cur.type === 'root' && <Root tab={activeTab} setTab={changeTab} onLeague={(id, name) => push({ type: 'league', id, name })} onTeam={(id) => openTeam(id)} />}
       {cur.type === 'league' && <LeagueDetail leagueId={cur.id} onBack={back} onTeam={openTeam} />}
       {cur.type === 'team' && <TeamDetail teamId={cur.id} onBack={back} onTeam={openTeam} />}
     </div>

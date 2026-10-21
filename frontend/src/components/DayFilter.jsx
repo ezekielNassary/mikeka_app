@@ -2,7 +2,6 @@ import { dateKeyOffset, todayKey, formatDay } from '../lib/constants.js';
 
 const PRESETS = [
   { key: 'all', label: 'All days' },
-  { key: 'yesterday', label: 'Yesterday' },
   { key: 'today', label: 'Today' },
   { key: 'tomorrow', label: 'Tomorrow' },
   { key: 'week', label: 'Next 7 days' },
@@ -11,12 +10,11 @@ const PRESETS = [
 export default function DayFilter({ value, onChange }) {
   const today = todayKey();
   const presetDate = {
-    yesterday: dateKeyOffset(-1),
     today,
     tomorrow: dateKeyOffset(1),
   };
   const presetTitle = {
-    all: `${formatDay(dateKeyOffset(-1))} – ${formatDay(dateKeyOffset(1))}`,
+    all: `${formatDay(today)} – ${formatDay(dateKeyOffset(1))}`,
     week: `${formatDay(today)} – ${formatDay(dateKeyOffset(7))}`,
   };
 

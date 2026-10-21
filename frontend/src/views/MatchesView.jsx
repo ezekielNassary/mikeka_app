@@ -15,7 +15,7 @@ const shiftKey = (key, delta) => {
   return localDateKey(dt.getTime());
 };
 
-function DateBar({ date, setDate }) {
+function DateBar({ date, setDate, resetLabel }) {
   const isToday = date === todayKey();
   return (
     <div className="flex items-center gap-2">
@@ -30,18 +30,18 @@ function DateBar({ date, setDate }) {
         <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 6l6 6-6 6" /></svg>
       </button>
       {!isToday && (
-        <button onClick={() => setDate(todayKey())} className="rounded-xl bg-emerald-500 hover:bg-emerald-400 text-ink-950 font-bold px-3 py-2 text-xs cursor-pointer shrink-0">Today</button>
+        <button onClick={() => setDate(todayKey())} className="rounded-xl bg-emerald-500 hover:bg-emerald-400 text-ink-950 font-bold px-3 py-2 text-xs cursor-pointer shrink-0">{resetLabel}</button>
       )}
     </div>
   );
 }
 
-function MatchList({ date, setDate, onMatch }) {
+function MatchList({ date, setDate, onMatch, resetLabel }) {
   const { data, loading, error, retry } = useAsync((signal) => fetchMatches(date, signal), [date]);
 
   return (
     <div className="space-y-5">
-      <DateBar date={date} setDate={setDate} />
+      <DateBar date={date} setDate={setDate} resetLabel={resetLabel} />
 
       {loading ? (
         <StatsLoader label="Loading matches…" />
@@ -75,8 +75,26 @@ function MatchList({ date, setDate, onMatch }) {
   );
 }
 
-export default function MatchesView({ onBack }) {
-  const [date, setDate] = useState(() => todayKey());
+const MODES = {
+  upcoming: {
+    title: 'Upcoming Matches',
+    emoji: '📅',
+    blurb: 'Fixtures ahead — tap one for team form & stats.',
+    resetLabel: 'Today',
+  },
+  results: {
+    title: 'Results',
+    emoji: '🏆',
+    blurb: 'Finished matches and scores — tap one for team form & stats.',
+    resetLabel: 'Latest',
+  },
+};
+
+export default function MatchesView({ onBack, mode = 'upcoming' }) {
+  const cfg = MODES[mode] || MODES.upcoming;
+  // Upcoming opens on today and looks forward; Results opens on yesterday so
+  // there are finished matches to show right away.
+  const [date, setDate] = useState(() => shiftKey(todayKey(), mode === 'results' ? -1 : 0));
   const [stack, setStack] = useState([{ type: 'list' }]);
   const cur = stack[stack.length - 1];
   const push = (r) => setStack((s) => [...s, r]);
@@ -95,13 +113,13 @@ export default function MatchesView({ onBack }) {
           >
             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
           </button>
-          <span className="text-2xl">⚽</span>
-          <h1 className="text-2xl font-black tracking-tight text-white">Matches</h1>
+          <span className="text-2xl">{cfg.emoji}</span>
+          <h1 className="text-2xl font-black tracking-tight text-white">{cfg.title}</h1>
         </div>
-        <p className="text-sm text-slate-500 mt-1 ml-[46px]">Every match, every competition — tap one for team form &amp; stats.</p>
+        <p className="text-sm text-slate-500 mt-1 ml-[46px]">{cfg.blurb}</p>
       </header>
 
-      {cur.type === 'list' && <MatchList date={date} setDate={setDate} onMatch={(m) => push({ type: 'match', id: m.id })} />}
+      {cur.type === 'list' && <MatchList date={date} setDate={setDate} resetLabel={cfg.resetLabel} onMatch={(m) => push({ type: 'match', id: m.id })} />}
       {cur.type === 'match' && <MatchDetail matchId={cur.id} onBack={back} onTeam={openTeam} />}
       {cur.type === 'team' && <TeamDetail teamId={cur.id} onBack={back} onTeam={openTeam} />}
     </div>

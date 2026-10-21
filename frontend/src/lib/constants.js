@@ -1,11 +1,3 @@
-export const MAJOR = [
-  'Premier League', 'LaLiga', 'Ligue 1', 'Serie A', 'Bundesliga', 'DFB Pokal',
-  'Super Lig', 'Saudi Pro League', 'Belgian Pro League', 'Eredivisie', 'Allsvenskan',
-  'Champions League', 'Europa League', 'Copa Libertadores', 'Copa Sudamericana',
-  'Liga MX', 'Serie B', 'LaLiga2', 'Ligue 2', 'Premier League 2', 'Championship',
-  'EFL Cup', 'Super Cup',
-];
-
 export const COUNTRY_CODE = {
   England: 'ENG', Scotland: 'SCO', Wales: 'WAL', 'Northern Ireland': 'NIR', Ireland: 'IRL',
   Spain: 'ESP', Italy: 'ITA', Germany: 'GER', France: 'FRA', Netherlands: 'NED',
