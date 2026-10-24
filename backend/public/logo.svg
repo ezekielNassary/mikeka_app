@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Mikeka football">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0f1420"/>
+      <stop offset="1" stop-color="#05070d"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.42" r="0.6">
+      <stop offset="0" stop-color="#10b981" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#10b981" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="shine" x1="0.2" y1="0" x2="0.8" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#cbd5e1"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <rect width="512" height="512" rx="112" fill="url(#glow)"/>
+
+  <g transform="translate(256 264)">
+    <circle r="168" fill="url(#shine)"/>
+    <circle r="168" fill="none" stroke="#0f1420" stroke-width="10"/>
+    <g fill="#0f1420">
+      <polygon points="0,-64 46,-33 28,20 -28,20 -46,-33"/>
+      <polygon points="0,-168 30,-150 18,-120 -18,-120 -30,-150" transform="translate(0 -12)"/>
+      <polygon points="160,-52 168,-20 140,-4 116,-28 128,-60" transform="translate(0 0)"/>
+      <polygon points="-160,-52 -128,-60 -116,-28 -140,-4 -168,-20"/>
+      <polygon points="99,134 130,122 138,92 110,84 88,108"/>
+      <polygon points="-99,134 -88,108 -110,84 -138,92 -130,122"/>
+    </g>
+  </g>
+</svg>

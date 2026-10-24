@@ -31,6 +31,22 @@ Rebuild, commit, and push to `origin` in one command:
 pnpm deploy -- "your commit message"
 ```
 
+### On the server (one pm2 process only)
+
+Only the backend runs under pm2 — it serves both the API and the built
+frontend from the same port. Never start the frontend (Vite) in production.
+
+```
+pnpm install:all
+pnpm build                     # writes frontend/dist -> backend/public
+pm2 delete frontend 2>/dev/null || true   # remove any old frontend process
+pm2 start ecosystem.config.js  # starts ONLY the backend
+pm2 save
+```
+
+After each update run `pnpm build` (or `pnpm deploy`) so `backend/public`
+matches the latest frontend, then `pm2 restart mikeka`.
+
 ## Development
 
 Backend (port 4000) — needs MySQL running:
