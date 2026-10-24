@@ -20,6 +20,8 @@ pnpm start                # serve app + /api on http://localhost:4000
 ```
 
 - `pnpm build` runs the Vite build and copies `frontend/dist` into `backend/public`.
+- `backend/public` and `frontend/dist` are **not tracked in git** — they are
+  generated locally (and on the server) by `pnpm build`.
 - `backend/src/app.js` serves `backend/public` and falls back to `index.html` for
   non-`/api` routes (SPA routing). Unknown `/api/*` routes still return JSON 404s.
 
@@ -44,8 +46,9 @@ pm2 start ecosystem.config.js  # starts ONLY the backend
 pm2 save
 ```
 
-After each update run `pnpm build` (or `pnpm deploy`) so `backend/public`
-matches the latest frontend, then `pm2 restart mikeka`.
+After each update (`git pull`), run `pnpm build` so `backend/public` matches the
+latest frontend, then `pm2 restart mikeka`. Since `backend/public` is untracked,
+`git pull` will never overwrite the files on the server.
 
 ## Development
 
