@@ -155,6 +155,47 @@ export default function App() {
       <Sidebar active={navKey} onSelect={selectView} open={navOpen} onClose={() => setNavOpen(false)} />
 
       <div className="pb-28">
+        {view === 'home' && (
+          <div className="max-w-6xl mx-auto px-3 sm:px-4 mt-4">
+            <div className="flex flex-wrap items-center gap-2">
+              <button onClick={() => setBookingOpen(true)} className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-ink-950 font-bold px-4 py-2.5 text-sm shadow-lg shadow-emerald-500/15 cursor-pointer">
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                  <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" />
+                </svg>
+                Load SportyBet Code
+              </button>
+              <button onClick={() => setAutoOpen(true)} disabled={!tournaments.length} className="flex items-center gap-2 rounded-xl bg-ink-800 hover:bg-ink-700 border border-ink-700 disabled:opacity-40 text-slate-200 font-bold px-4 py-2.5 text-sm cursor-pointer">
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 3l1.9 5.8H20l-4.9 3.6 1.9 5.8L12 14.6 7.1 18.2l1.9-5.8L4 8.8h6.1z" />
+                </svg>
+                Auto Pick
+              </button>
+              <button onClick={() => selectView('upcoming')} className="flex items-center gap-2 rounded-xl bg-ink-800 hover:bg-ink-700 border border-ink-700 text-slate-200 font-bold px-4 py-2.5 text-sm cursor-pointer">
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="9" />
+                  <path d="M12 7v5l3 2" />
+                </svg>
+                Upcoming
+              </button>
+              <button onClick={() => selectView('results')} className="flex items-center gap-2 rounded-xl bg-ink-800 hover:bg-ink-700 border border-ink-700 text-slate-200 font-bold px-4 py-2.5 text-sm cursor-pointer">
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M8 21h8m-4-4v4M6 4h12v6a6 6 0 01-12 0V4z" />
+                </svg>
+                Results
+              </button>
+              <button onClick={() => selectView('stats-leagues')} className="flex items-center gap-2 rounded-xl bg-ink-800 hover:bg-ink-700 border border-ink-700 text-slate-200 font-bold px-4 py-2.5 text-sm cursor-pointer">
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M3 20h18" />
+                  <rect x="4" y="12" width="3.5" height="6" rx="1" />
+                  <rect x="10.2" y="7" width="3.5" height="11" rx="1" />
+                  <rect x="16.5" y="3" width="3.5" height="15" rx="1" />
+                </svg>
+                Stats
+              </button>
+            </div>
+          </div>
+        )}
       {view === 'stats' && (
         <StatsView
           onBack={() => selectView('home')}
