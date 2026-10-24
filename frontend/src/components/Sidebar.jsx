@@ -54,6 +54,7 @@ const ICONS = {
 
 const NAV_ITEMS = [
   { key: 'home', label: 'Home', icon: 'home' },
+  { key: 'load-code', label: 'Load Code', icon: 'slip' },
   { key: 'upcoming', label: 'Upcoming Matches', icon: 'upcoming' },
   { key: 'results', label: 'Results', icon: 'results' },
   {

@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { useOddsLoader } from './hooks/useOddsLoader.js';
 import { labelLeague, localDateKey, dateKeyOffset, todayKey, formatDay } from './lib/constants.js';
 import { collectAutoPicks, AUTO_MAX_PICKS } from './lib/autoPick.js';
-import LoadingScreen from './components/LoadingScreen.jsx';
 import DayFilter from './components/DayFilter.jsx';
 import LeagueFilter from './components/LeagueFilter.jsx';
 import MatchRow from './components/MatchRow.jsx';
@@ -12,6 +11,8 @@ import AutoPickDialog from './components/AutoPickDialog.jsx';
 import Sidebar from './components/Sidebar.jsx';
 import StatsView from './views/StatsView.jsx';
 import MatchesView from './views/MatchesView.jsx';
+import BookingLoadModal from './components/BookingLoadModal.jsx';
+import { loadSlip, saveSlip } from './lib/slipStorage.js';
 
 // SportyBet only lists matches that haven't kicked off yet, so there is never
 // anything for past days. 'all' maps to today..tomorrow, 'week' to today..+7.
@@ -38,12 +39,13 @@ export default function App() {
   const [league, setLeague] = useState('all');
   const [query, setQuery] = useState('');
   const [expanded, setExpanded] = useState(null);
-  const [picks, setPicks] = useState([]);
+  const [picks, setPicks] = useState(() => loadSlip());
   const [slipOpen, setSlipOpen] = useState(false);
   const [toast, setToast] = useState('');
   const [view, setView] = useState('home');
   const [navKey, setNavKey] = useState('home');
   const [navOpen, setNavOpen] = useState(false);
+  const [bookingOpen, setBookingOpen] = useState(false);
 
   const [autoOpen, setAutoOpen] = useState(false);
   const [autoMarkets, setAutoMarkets] = useState([]);
@@ -56,6 +58,10 @@ export default function App() {
     const id = setInterval(() => setNow(Date.now()), 30000);
     return () => clearInterval(id);
   }, []);
+
+  useEffect(() => {
+    saveSlip(picks);
+  }, [picks]);
 
   const range = resolveDateRange(day);
   const q = query.trim().toLowerCase();
@@ -93,6 +99,11 @@ export default function App() {
   };
 
   const selectView = (key) => {
+    if (key === 'load-code') {
+      setBookingOpen(true);
+      setNavOpen(false);
+      return;
+    }
     setNavKey(key);
     // Sidebar 'stats-leagues' / 'stats-teams' both open the Statistics page,
     // which reads the active tab from navKey.
@@ -108,6 +119,17 @@ export default function App() {
       return [...rest, p];
     });
     setSlipOpen(true);
+  };
+
+  const applyBooking = (newPicks) => {
+    if (!Array.isArray(newPicks) || !newPicks.length) return;
+    setPicks((prev) => {
+      const map = new Map(prev.map((p) => [p.matchKey, p]));
+      for (const p of newPicks) map.set(p.matchKey, p);
+      return [...map.values()];
+    });
+    setSlipOpen(true);
+    flash('Booking code loaded into slip');
   };
 
   const runAutoPick = () => {
@@ -127,10 +149,6 @@ export default function App() {
     else if (eased) flash(`Added ${generated.length} picks (odds floor eased a little)`);
     else flash(`Added ${generated.length} of ${target} picks`);
   };
-
-  if (phase === 'connecting') {
-    return <LoadingScreen />;
-  }
 
   return (
     <div className="min-h-screen lg:pl-60">
@@ -210,6 +228,11 @@ export default function App() {
               Try again
             </button>
           </div>
+        ) : phase === 'connecting' ? (
+          <div className="py-24 text-center">
+            <div className="inline-block w-8 h-8 rounded-full border-[3px] border-ink-700 border-t-emerald-400 animate-spin" />
+            <p className="text-sm text-slate-500 mt-4">Loading matches…</p>
+          </div>
         ) : filtered.length === 0 ? (
           <div className="py-24 text-center">
             <p className="text-slate-400 font-semibold mb-1">No matches{range?.key ? ` on ${formatDay(range.key)}` : day === 'week' ? ' in the next 7 days' : ' today or tomorrow'}</p>
@@ -271,6 +294,7 @@ export default function App() {
         setMinOdds={setAutoMinOdds}
         onGenerate={runAutoPick}
       />
+      <BookingLoadModal open={bookingOpen} onClose={() => setBookingOpen(false)} onApply={applyBooking} />
 
       {toast && (
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 rounded-xl bg-ink-800 border border-ink-700 px-4 py-2.5 text-sm font-semibold text-slate-100 shadow-lg animate-fade-in">

@@ -1,6 +1,6 @@
 import { trackUsage } from '../middleware/auth.js';
 import { getPool } from '../db/index.js';
-import { fetchSportyOdds, fetchSportyOddsPage, cacheAllOdds, fetchBooking, buildOddsPayload, findOddsForMatch, pickOptions, createSportyBetSlip } from '../services/sportybet.js';
+import { fetchSportyOdds, fetchSportyOddsPage, cacheAllOdds, fetchBooking, fetchBookingPreview, buildOddsPayload, findOddsForMatch, pickOptions, createSportyBetSlip } from '../services/sportybet.js';
 import { resolveTeam, findMatchId, getMatchDetails, buildLast5, summarize } from '../services/fotmob.js';
 
 export async function getOdds(req, res) {
@@ -99,10 +99,24 @@ export async function getBooking(req, res) {
   if (!code) return res.status(400).json({ error: 'booking code required' });
   try {
     const slip = await fetchBooking(code);
-    try { await trackUsage(req.user.id, 'booking_load', code); } catch {}
+    try { if (req.user?.id) await trackUsage(req.user.id, 'booking_load', code); } catch {}
     res.json({ success: true, source: 'SportyBet', ...slip });
   } catch (e) {
     console.error('[booking]', e.message);
+    const notFound = /not found|Invalid/.test(e.message);
+    res.status(notFound ? 404 : 502).json({ error: e.message, source: 'SportyBet' });
+  }
+}
+
+export async function getBookingPreview(req, res) {
+  const code = (req.params.code || '').trim().toUpperCase();
+  if (!code) return res.status(400).json({ error: 'booking code required' });
+  try {
+    const slip = await fetchBookingPreview(code);
+    try { if (req.user?.id) await trackUsage(req.user.id, 'booking_load', code); } catch {}
+    res.json({ success: true, source: 'SportyBet', ...slip });
+  } catch (e) {
+    console.error('[booking:preview]', e.message);
     const notFound = /not found|Invalid/.test(e.message);
     res.status(notFound ? 404 : 502).json({ error: e.message, source: 'SportyBet' });
   }

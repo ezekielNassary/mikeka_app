@@ -208,6 +208,27 @@ async function fetchBookingPreview(code) {
   return buildPreviewPayload(d.data);
 }
 
+// Normalize every market on a booking match so the UI can offer alternative
+// picks (e.g. switch a 1X2 pick to Over/Under 1.5) for the same event.
+function normalizeMarkets(ev) {
+  return (ev.markets || [])
+    .map((m) => ({
+      marketId: m.id,
+      name: m.name,
+      specifier: m.specifier || '',
+      group: m.group || '',
+      outcomes: (m.outcomes || [])
+        .map((o) => ({
+          outcomeId: o.id,
+          desc: o.desc,
+          odds: parseFloat(o.odds),
+          probability: parseFloat(o.probability),
+        }))
+        .filter((o) => Number.isFinite(o.odds) && o.odds > 0 && Number.isFinite(o.probability)),
+    }))
+    .filter((m) => m.outcomes.length > 0);
+}
+
 // Join the slip's selections with full event details into a compact matches list.
 // Multiple selections on the same match (different markets) are merged into one row.
 function buildBookingPayload(data) {
@@ -254,10 +275,12 @@ function buildBookingPayload(data) {
       kickoffUTC: ev.estimateStartTime || null,
       status: ev.matchStatus || 'Not start',
       score: /^\d+\s*[:\-]\s*\d+$/.test(ev.setScore || '') ? ev.setScore.replace(/\s*[:\-]\s*/, '-') : null,
+      markets: normalizeMarkets(ev),
       pick: {
-        market: market.name + (sel.specifier ? ' (' + sel.specifier + ')' : ''),
+        market: market.name + (market.specifier ? ' ' + market.specifier : ''),
         outcome: outcome.desc, odds: parseFloat(outcome.odds),
         probability: parseFloat(outcome.probability),
+        marketId: market.id, outcomeId: outcome.id, specifier: market.specifier || '',
         won: ended && outcome.isWinning != null ? Number(outcome.isWinning) === 1 : null,
       },
     });
