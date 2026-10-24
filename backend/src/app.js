@@ -1,4 +1,5 @@
 import express from 'express';
+import compression from 'compression';
 import cors from 'cors';
 import morgan from 'morgan';
 import fs from 'node:fs';
@@ -14,6 +15,9 @@ const indexHtml = path.join(clientDir, 'index.html');
 
 const app = express();
 
+// Compress everything (API JSON, JS, CSS) — the API payloads are large and the
+// frontend is unusable over slow links without gzip.
+app.use(compression());
 app.use(cors({ origin: config.corsOrigin }));
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true }));
@@ -24,7 +28,16 @@ app.use('/api', routes);
 // Serve the built React SPA (copied to backend/public by `pnpm build`) for all
 // non-API routes, so the whole app runs on this single port.
 if (fs.existsSync(indexHtml)) {
-  app.use(express.static(clientDir));
+  app.use(express.static(clientDir, {
+    setHeaders(res, filePath) {
+      // Vite assets are content-hashed, so they can be cached forever.
+      if (filePath.includes(`${path.sep}assets${path.sep}`)) {
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      } else {
+        res.setHeader('Cache-Control', 'public, max-age=0');
+      }
+    },
+  }));
   app.get('*', (req, res, next) => {
     if (req.path.startsWith('/api')) return next();
     res.sendFile(indexHtml);
